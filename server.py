@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Annotated, TypedDict
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, create_model, Field
 from fastapi.middleware.cors import CORSMiddleware
+import sqlite3
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.tools import StructuredTool
@@ -22,7 +23,8 @@ from mcp.client.stdio import stdio_client
 # ------------------------------------------------------------
 
 # Ensure API Key is set
-os.environ["GEMINI_API_KEY"] = "AIzaSyDQr1XXZhjbxQ1WaptVAEqpWNAsK3gXj-Y"
+# Ensure API Key is set
+# os.environ["GEMINI_API_KEY"] = "YOUR_KEY_HERE" # Set this in Render Dashboard!
 
 app = FastAPI(title="Tudo AI API")
 
@@ -206,6 +208,30 @@ async def get_events():
         
     # Return last 50 events reversed
     return {"events": events[::-1][:50]}
+
+@app.get("/tasks")
+async def get_tasks():
+    """Fetch all tasks directly from the DB for the UI."""
+    db_file = "tudo.sqlite3"
+    if not os.path.exists(db_file):
+        return {"tasks": []}
+    
+    try:
+        conn = sqlite3.connect(db_file)
+        conn.row_factory = sqlite3.Row  # To get dictionary-like access
+        c = conn.cursor()
+        c.execute("SELECT * FROM todos ORDER BY priority DESC, created_at DESC")
+        rows = c.fetchall()
+        
+        tasks = []
+        for row in rows:
+            tasks.append(dict(row))
+            
+        conn.close()
+        return {"tasks": tasks}
+    except Exception as e:
+        print(f"Error reading tasks: {e}")
+        return {"tasks": [], "error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
