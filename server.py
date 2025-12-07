@@ -23,8 +23,12 @@ from mcp.client.stdio import stdio_client
 # ------------------------------------------------------------
 
 # Ensure API Key is set
-# Ensure API Key is set
-# os.environ["GEMINI_API_KEY"] = "YOUR_KEY_HERE" # Set this in Render Dashboard!
+# The user sets "GEMINI_API_KEY" in Render, but LangChain expects "GOOGLE_API_KEY"
+if "GEMINI_API_KEY" in os.environ:
+    os.environ["GOOGLE_API_KEY"] = os.environ["GEMINI_API_KEY"]
+    print(f"✅ Loaded API Key (Length: {len(os.environ['GEMINI_API_KEY'])})")
+else:
+    print("❌ ERROR: GEMINI_API_KEY is missing from Helper Environment!")
 
 app = FastAPI(title="Tudo AI API")
 
